@@ -46,8 +46,19 @@ const formatInTimezone = (time: string, timezone: string) =>
 const getDateKey = (time: string, timezone: string) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: timezone }).format(new Date(time));
 
-const isFillable = (field: BookingField) =>
-  !field.hidden && (field.editable ?? "user") !== "system" && field.editable !== "user-readonly";
+// Mirrors which fields the page lets the visitor edit (see BookingFields.tsx)
+const RESCHEDULE_EDITABLE_FIELDS = ["guests", "smsReminderNumber", "location", "rescheduleReason"];
+
+const isFillable = (field: BookingField, isRescheduling: boolean) => {
+  if (field.hidden || field.editable === "user-readonly") return false;
+  const view = isRescheduling ? "reschedule" : "booking";
+  if (field.views && !field.views.some((candidate) => candidate.id === view)) return false;
+  if (field.name === "rescheduleReason") return isRescheduling;
+  if (!isRescheduling) return true;
+  if (field.name === "notes") return false;
+  const isSystemField = field.editable === "system" || field.editable === "system-but-optional";
+  return !isSystemField || RESCHEDULE_EDITABLE_FIELDS.includes(field.name);
+};
 
 const getOptionValues = (field: BookingField) => (field.options ?? []).map((option) => option.value);
 
@@ -118,7 +129,7 @@ const describeField = (field: BookingField, snapshot: BookerSnapshot) => {
 };
 
 const getFillableFields = (snapshot: BookerSnapshot) =>
-  (snapshot.event?.bookingFields ?? []).filter(isFillable);
+  (snapshot.event?.bookingFields ?? []).filter((field) => isFillable(field, snapshot.isRescheduling));
 
 type ToolDefinition = Omit<WebMCPTool, "execute"> & {
   run: (input: Record<string, unknown>, snapshot: BookerSnapshot) => Promise<unknown> | unknown;

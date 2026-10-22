@@ -14,11 +14,12 @@ const makeSnapshot = (overrides: Partial<BookerSnapshot> = {}) => {
       locations: [{ type: "integrations:daily" }],
       metadata: { multipleDuration: [15, 30] },
       bookingFields: [
-        field({ name: "name", type: "name", required: true }),
-        field({ name: "email", type: "email", required: true }),
+        field({ name: "name", type: "name", required: true, editable: "system" }),
+        field({ name: "email", type: "email", required: true, editable: "system" }),
         field({ name: "topic", type: "select", options: [{ label: "Sales", value: "sales" }] }),
-        field({ name: "rescheduleReason", type: "textarea", hidden: true }),
-        field({ name: "title", editable: "system" }),
+        field({ name: "rescheduleReason", type: "textarea", views: [{ id: "reschedule" }] }),
+        field({ name: "internal", hidden: true }),
+        field({ name: "locked", editable: "user-readonly" }),
       ],
     } as unknown as BookerEvent,
     slots: {
@@ -117,13 +118,20 @@ describe("booker WebMCP tools", () => {
     expect(result.fields.map((f) => f.name)).toEqual(["name", "email", "topic"]);
   });
 
+  it("keeps the page's rules when rescheduling", async () => {
+    const result = (await call("get-booking-form", {}, makeSnapshot({ isRescheduling: true }))) as {
+      fields: { name: string }[];
+    };
+    expect(result.fields.map((f) => f.name)).toEqual(["topic", "rescheduleReason"]);
+  });
+
   it("fills answers, or nothing when one of them is wrong", async () => {
     const snapshot = makeSnapshot();
     const bad = await call("fill-booking-form", { answers: { email: "a@b.co", topic: "legal" } }, snapshot);
     expect(bad).toMatchObject({ ok: false });
     expect(snapshot.form.getValues("responses.email")).toBeUndefined();
 
-    const hidden = await call("fill-booking-form", { answers: { rescheduleReason: "x" } }, snapshot);
+    const hidden = await call("fill-booking-form", { answers: { internal: "x", locked: "y" } }, snapshot);
     expect(hidden).toMatchObject({ ok: false });
 
     const good = await call("fill-booking-form", { answers: { email: "a@b.co", topic: "sales" } }, snapshot);

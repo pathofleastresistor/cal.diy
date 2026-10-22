@@ -12,3 +12,4 @@ Opt-in (`NEXT_PUBLIC_WEBMCP_ENABLED=1`). In browsers that support [WebMCP](https
 | `review-booking` | Validates the form and summarizes the booking |
 
 No tool books or reschedules. The visitor confirms with the page's own Confirm button.
+

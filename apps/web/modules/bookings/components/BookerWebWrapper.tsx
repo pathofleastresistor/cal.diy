@@ -24,6 +24,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { getProviders, signIn, useSession } from "next-auth/react";
 import { useCallback, useEffect, useMemo } from "react";
 import { shallow } from "zustand/shallow";
+import { useBookerWebMCP } from "../hooks/useBookerWebMCP";
 import { useBookings } from "../hooks/useBookings";
 import { getLastVisibleDate, useCalendars } from "../hooks/useCalendars";
 import { useSlots } from "../hooks/useSlots";
@@ -173,6 +174,8 @@ const BookerWebWrapperComponent = (props: BookerWebWrapperAtomProps): JSX.Elemen
     metadata: metadata ?? {},
     teamMemberEmail: props.teamMemberEmail,
   });
+
+  useBookerWebMCP({ event: event.data, schedule, slots, form: bookerForm.bookingForm });
 
   useBookerEmbedEvents({
     eventId: event.data?.id,
